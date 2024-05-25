@@ -1,0 +1,10 @@
+[package]
+name = "big_lehmer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dashu = "0.4.2"
+
+[dev-dependencies]
+rand = { version = "0.8.5", features = ["small_rng"] }
