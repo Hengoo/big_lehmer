@@ -1,4 +1,4 @@
-use acceleration_structures::{DecodeAs, EncodeAS};
+use acceleration_structures::{DecodeAS, EncodeAS, EncodeCache};
 use dashu::{base::DivRem, integer::UBig};
 use error::Error;
 
@@ -48,6 +48,8 @@ impl Lehmer {
         let mut encode_as = EncodeAS::new(numbers.len());
         let mut result = UBig::ZERO;
 
+        let mut cache = EncodeCache::new(0, 1);
+
         for (index, &number) in numbers[..numbers.len() - 1].iter().enumerate() {
             // Validation is very cheap compared to the rest, so we alway do it
             let visited = validation
@@ -58,9 +60,20 @@ impl Lehmer {
             }
             *visited = true;
 
-            result += encode_as.insert(number);
-            result *= numbers.len() - (index + 1);
+            let add = encode_as.insert(number) as u64;
+            let mul = (numbers.len() - (index + 1)) as u64;
+
+            // Naive approach would now do result += add and result *= mul
+            // with the cache we reduce the big number interactions
+            if cache.add(add, mul).is_none() {
+                result *= cache.mul;
+                result += cache.add;
+                cache = EncodeCache::new(add, mul);
+            }
         }
+        result *= cache.mul;
+        result += cache.add;
+
         drop(validation);
         drop(encode_as);
 
@@ -99,11 +112,11 @@ impl Lehmer {
             *t = remain as u32;
         }
 
-        let mut decode_as = DecodeAs::new(out.len());
+        let mut decode_as = DecodeAS::new(out.len());
         for (index, &t) in tmp[0..out.len() - 1].iter().rev().enumerate() {
-            out[index] = decode_as.remove(t)?;
+            out[index] = decode_as.remove(t);
         }
-        *out.last_mut().unwrap() = decode_as.remove(0)?;
+        *out.last_mut().unwrap() = decode_as.remove(0);
 
         Ok(())
     }
@@ -123,7 +136,7 @@ mod tests {
         assert_eq!(Lehmer::get_encode_size(35), 17);
         assert_eq!(Lehmer::get_encode_size(1024), 1097);
         assert_eq!(Lehmer::get_encode_size(1000000), 2311111);
-        // slow but works
+        // works up to 32 but that one is a bit slow
         // assert_eq!(Lehmer::get_encode_size(u32::MAX as usize), 16405328180);
     }
 
@@ -138,13 +151,14 @@ mod tests {
 
     #[test]
     fn test_roundtrip_large() {
-        let mut input: Vec<u32> = (0..1000).rev().collect();
+        let mut input: Vec<u32> = (0..10000).rev().collect();
 
         let mut rng = rand::thread_rng();
 
         input.shuffle(&mut rng);
 
         let encoded = Lehmer::encode(&input).unwrap();
+        assert!(!encoded.is_empty());
         let roundtrip = Lehmer::decode(&encoded, input.len()).unwrap();
         assert_eq!(input, roundtrip);
     }

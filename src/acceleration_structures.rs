@@ -57,24 +57,105 @@ impl EncodeAS {
     }
 }
 
+// Cache to compute several steps on "small" numbers to minimize big int overhead
+// u128 is faster than u64. Have not tried it with big int here, but could further improve performance
+#[derive(Debug)]
+pub(crate) struct EncodeCache {
+    pub(crate) add: u128,
+    pub(crate) mul: u128,
+}
+
+impl EncodeCache {
+    pub(crate) fn new(add: u64, mul: u64) -> Self {
+        let new_add = add.checked_mul(mul).unwrap();
+        EncodeCache {
+            add: new_add as u128,
+            mul: mul as u128,
+        }
+    }
+
+    pub(crate) fn add(&mut self, add: u64, mul: u64) -> Option<()> {
+        let tmp = self.add.checked_add(add as u128)?;
+        self.add = tmp.checked_mul(mul as u128)?;
+
+        // This cannot fail when above succeeded
+        self.mul *= mul as u128;
+
+        Some(())
+    }
+}
+
 // This is currently the naive approach.
 // create a list [0..N]
 // remove(index) return the number on that index and afterwards remove it from the list
 #[derive(Debug)]
-pub(crate) struct DecodeAs {
+pub(crate) struct _DecodeAsNaive {
     numbers: Vec<u32>,
 }
-impl DecodeAs {
-    pub fn new(element_count: usize) -> DecodeAs {
-        DecodeAs {
+impl _DecodeAsNaive {
+    pub fn _new(element_count: usize) -> Self {
+        Self {
             numbers: (0..element_count as u32).collect(),
         }
     }
 
-    pub fn remove(&mut self, index: u32) -> Result<u32, Error> {
+    pub fn _remove(&mut self, index: u32) -> Result<u32, Error> {
         let tmp = *self.numbers.get(index as usize).ok_or(Error::DecodeError)?;
         self.numbers.remove(index as usize);
         Ok(tmp)
+    }
+}
+
+// Very slightly faster than the naive approach :(
+// Basically a tree that stores prim counts and is adjusted while fetching a number
+// TODO: Some actual profiling
+#[derive(Debug)]
+pub(crate) struct DecodeAS {
+    // Store number of primitives of the left subtree
+    tree: Vec<u32>,
+}
+impl DecodeAS {
+    pub fn new(element_count: usize) -> Self {
+        let len = element_count.next_power_of_two();
+        let nodes = (0..len)
+            .map(|i| {
+                if i == 0 {
+                    return 1;
+                }
+                let height = i.trailing_zeros();
+                1u32 << height
+            })
+            .collect();
+        Self { tree: nodes }
+    }
+
+    pub fn remove(&mut self, number: u32) -> u32 {
+        let mut left_count = 0;
+        let mut node_id = self.tree.len() as u32 / 2;
+        let mut jump = self.tree.len() as u32 / 4;
+
+        loop {
+            let node = &mut self.tree[node_id as usize];
+            if number >= (*node + left_count) {
+                // go right
+                left_count += *node;
+                node_id += jump;
+                if jump == 0 {
+                    break;
+                }
+            } else {
+                // go left
+                *node -= 1;
+                node_id -= jump;
+                if jump == 0 {
+                    node_id -= 1;
+                    break;
+                }
+            }
+
+            jump /= 2;
+        }
+        node_id
     }
 }
 
