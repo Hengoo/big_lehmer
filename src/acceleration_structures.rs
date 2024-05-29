@@ -2,6 +2,7 @@ use super::Error;
 
 // Naive approach would create a list [0..N]
 // and on insert(number) find the index of the number, then remove it
+// This constructs a binary tree which node weights are adjusted with on insertion
 #[derive(Debug)]
 pub(crate) struct EncodeAS {
     tree: Vec<u32>,
@@ -13,24 +14,24 @@ impl EncodeAS {
         EncodeAS { tree: vec![0; len] }
     }
 
-    fn _left_child_id(node: u32) -> u32 {
-        let zeroes = node.trailing_zeros();
-        node - (1 << (zeroes - 1))
+    fn _left_child_id(node_id: u32) -> u32 {
+        let zeroes = node_id.trailing_zeros();
+        node_id - (1 << (zeroes - 1))
     }
 
-    fn _right_child_id(node: u32) -> u32 {
-        let zeroes = node.trailing_zeros();
-        node + (1 << (zeroes - 1))
+    fn _right_child_id(node_id: u32) -> u32 {
+        let zeroes = node_id.trailing_zeros();
+        node_id + (1 << (zeroes - 1))
     }
 
-    fn _parent(node: u32) -> u32 {
-        let zeroes = node.trailing_zeros();
-        let tmp = (node >> zeroes) & 3;
+    fn _parent_id(node_id: u32) -> u32 {
+        let zeroes = node_id.trailing_zeros();
+        let tmp = (node_id >> zeroes) & 3;
         match tmp {
             // Move least significant bit by one to left
-            1 => node + (1 << zeroes),
+            1 => node_id + (1 << zeroes),
             // Remove least significant bit
-            3 => node & (node - 1),
+            3 => node_id & (node_id - 1),
             _ => unreachable!(),
         }
     }
@@ -57,8 +58,14 @@ impl EncodeAS {
     }
 }
 
-// Cache to compute several steps on "small" numbers to minimize big int overhead
-// u128 is faster than u64. Have not tried it with big int here, but could further improve performance
+/// Encoding usually is a loop like
+/// {
+///     big_number += encode_value
+///     big_number += loop_index
+/// }
+/// This cache combines several steps on "small" numbers to minimize the cost of big number math
+/// It stores a running add and running mul.
+/// u128 is faster than u64. Have not tried it with big int here, but could further improve performance
 #[derive(Debug)]
 pub(crate) struct EncodeCache {
     pub(crate) add: u128,
@@ -66,6 +73,10 @@ pub(crate) struct EncodeCache {
 }
 
 impl EncodeCache {
+    pub(crate) fn default() -> Self {
+        EncodeCache { add: 0, mul: 1 }
+    }
+
     pub(crate) fn new(add: u64, mul: u64) -> Self {
         let new_add = add.checked_mul(mul).unwrap();
         EncodeCache {
@@ -75,17 +86,16 @@ impl EncodeCache {
     }
 
     pub(crate) fn add(&mut self, add: u64, mul: u64) -> Option<()> {
-        let tmp = self.add.checked_add(add as u128)?;
-        self.add = tmp.checked_mul(mul as u128)?;
+        let mut tmp = self.add.checked_add(add as u128)?;
+        tmp = tmp.checked_mul(mul as u128)?;
 
-        // This cannot fail when above succeeded
-        self.mul *= mul as u128;
-
+        self.mul = self.mul.checked_mul(mul as u128)?;
+        self.add = tmp;
         Some(())
     }
 }
 
-// This is currently the naive approach.
+// Naive approach. Slower so currently not used, but needs more profiling
 // create a list [0..N]
 // remove(index) return the number on that index and afterwards remove it from the list
 #[derive(Debug)]
@@ -106,7 +116,7 @@ impl _DecodeAsNaive {
     }
 }
 
-// Very slightly faster than the naive approach :(
+// Very slightly faster than the naive approach
 // Basically a tree that stores prim counts and is adjusted while fetching a number
 // TODO: Some actual profiling
 #[derive(Debug)]
@@ -226,9 +236,9 @@ mod tests {
 
     fn parent_child_roundtrip(node_id: u32) {
         let left = EncodeAS::_left_child_id(node_id);
-        assert_eq!(EncodeAS::_parent(left), node_id);
+        assert_eq!(EncodeAS::_parent_id(left), node_id);
         let right = EncodeAS::_right_child_id(node_id);
-        assert_eq!(EncodeAS::_parent(right), node_id);
+        assert_eq!(EncodeAS::_parent_id(right), node_id);
     }
 
     #[test]
