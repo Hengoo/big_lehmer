@@ -5,7 +5,11 @@
             "label": "cargo_clippy",
             "type": "cargo",
             "command": "clippy",
-            "args": [],
+            "args": [
+                "--",
+                "-Dwarnings",
+                "-Dclippy::pedantic"
+            ],
             "problemMatcher": [
                 "$rustc"
             ],
@@ -18,6 +22,9 @@
             "type": "cargo",
             "command": "build",
             "args": [],
+            "dependsOn": [
+                "cargo_clippy"
+            ],
             "problemMatcher": [
                 "$rustc"
             ]
@@ -28,6 +35,9 @@
             "command": "build",
             "args": [
                 "--release"
+            ],
+            "dependsOn": [
+                "cargo_clippy"
             ],
             "problemMatcher": [
                 "$rustc"

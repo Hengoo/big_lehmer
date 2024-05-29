@@ -1,5 +1,3 @@
-use super::Error;
-
 // Naive approach would create a list [0..N]
 // and on insert(number) find the index of the number, then remove it
 // This constructs a binary tree which node weights are adjusted with on insertion
@@ -9,9 +7,11 @@ pub(crate) struct EncodeAS {
 }
 
 impl EncodeAS {
-    pub fn new(element_count: usize) -> Self {
+    pub fn new(element_count: u32) -> Self {
         let len = element_count.next_power_of_two();
-        EncodeAS { tree: vec![0; len] }
+        EncodeAS {
+            tree: vec![0; len.try_into().unwrap()],
+        }
     }
 
     fn _left_child_id(node_id: u32) -> u32 {
@@ -38,8 +38,9 @@ impl EncodeAS {
 
     pub fn insert(&mut self, number: u32) -> u32 {
         let mut result = number;
-        let mut node = self.tree.len() as u32 / 2;
-        let mut jump = self.tree.len() as u32 / 4;
+        let element_count = u32::try_from(self.tree.len()).unwrap();
+        let mut node = element_count / 2;
+        let mut jump = element_count / 4;
 
         loop {
             if number >= node {
@@ -58,12 +59,7 @@ impl EncodeAS {
     }
 }
 
-/// Encoding usually is a loop like
-/// {
-///     big_number += encode_value
-///     big_number += loop_index
-/// }
-/// This cache combines several steps on "small" numbers to minimize the cost of big number math
+/// This cache combines several steps of the encode loop to "small" numbers to minimize the cost of big number math
 /// It stores a running add and running mul.
 /// u128 is faster than u64. Have not tried it with big int here, but could further improve performance
 #[derive(Debug)]
@@ -80,52 +76,31 @@ impl EncodeCache {
     pub(crate) fn new(add: u64, mul: u64) -> Self {
         let new_add = add.checked_mul(mul).unwrap();
         EncodeCache {
-            add: new_add as u128,
-            mul: mul as u128,
+            add: new_add.into(),
+            mul: mul.into(),
         }
     }
 
     pub(crate) fn add(&mut self, add: u64, mul: u64) -> Option<()> {
-        let mut tmp = self.add.checked_add(add as u128)?;
-        tmp = tmp.checked_mul(mul as u128)?;
+        let mut tmp = self.add.checked_add(add.into())?;
+        tmp = tmp.checked_mul(mul.into())?;
 
-        self.mul = self.mul.checked_mul(mul as u128)?;
+        self.mul = self.mul.checked_mul(mul.into())?;
         self.add = tmp;
         Some(())
     }
 }
 
-// Naive approach. Slower so currently not used, but needs more profiling
-// create a list [0..N]
-// remove(index) return the number on that index and afterwards remove it from the list
-#[derive(Debug)]
-pub(crate) struct _DecodeAsNaive {
-    numbers: Vec<u32>,
-}
-impl _DecodeAsNaive {
-    pub fn _new(element_count: usize) -> Self {
-        Self {
-            numbers: (0..element_count as u32).collect(),
-        }
-    }
-
-    pub fn _remove(&mut self, index: u32) -> Result<u32, Error> {
-        let tmp = *self.numbers.get(index as usize).ok_or(Error::DecodeError)?;
-        self.numbers.remove(index as usize);
-        Ok(tmp)
-    }
-}
-
-// Very slightly faster than the naive approach
-// Basically a tree that stores prim counts and is adjusted while fetching a number
-// TODO: Some actual profiling
+/// Naive approach would be to create a list from 0 to N and then repeatedly remove elements from it
+/// Very slightly faster than the naive approach
+/// Basically a tree that stores prim counts and is adjusted while fetching a number
 #[derive(Debug)]
 pub(crate) struct DecodeAS {
     // Store number of primitives of the left subtree
     tree: Vec<u32>,
 }
 impl DecodeAS {
-    pub fn new(element_count: usize) -> Self {
+    pub fn new(element_count: u32) -> Self {
         let len = element_count.next_power_of_two();
         let nodes = (0..len)
             .map(|i| {
@@ -140,9 +115,10 @@ impl DecodeAS {
     }
 
     pub fn remove(&mut self, number: u32) -> u32 {
+        let length = u32::try_from(self.tree.len()).expect("Sequence must fit in u32");
         let mut left_count = 0;
-        let mut node_id = self.tree.len() as u32 / 2;
-        let mut jump = self.tree.len() as u32 / 4;
+        let mut node_id = length / 2;
+        let mut jump = length / 4;
 
         loop {
             let node = &mut self.tree[node_id as usize];
@@ -174,7 +150,7 @@ mod tests {
     use super::*;
 
     fn encode_as_helper(numbers: &[u32]) -> Box<[u32]> {
-        let mut t = EncodeAS::new(numbers.len());
+        let mut t = EncodeAS::new(u32::try_from(numbers.len()).unwrap());
 
         let mut result = vec![0u32; numbers.len()].into_boxed_slice();
         for (&number, r) in numbers.iter().zip(result.iter_mut()) {

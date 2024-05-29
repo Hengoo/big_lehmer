@@ -20,48 +20,52 @@ mod tests {
         assert_eq!(Lehmer::get_encode_size(35), 17);
         assert_eq!(Lehmer::get_encode_size(1024), 1097);
         assert_eq!(Lehmer::get_encode_size(4000), 5263 + 2);
-        assert_eq!(Lehmer::get_encode_size(1000000), 2311111 + 32);
+        assert_eq!(Lehmer::get_encode_size(1_000_000), 2_311_111 + 32);
         // assert_eq!(Lehmer::get_encode_size(u32::MAX), 16405328180 + 32);
     }
 
     #[test]
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_precision_loss,
+        clippy::cast_sign_loss
+    )]
     fn test_encode_size() {
         // Validate that the f64 approximation good enough
         // Dashu log2 is also just an estimate with relatively low precision.
-        // It is mainly used to compute the byte paddings
-        // Not necessarily accurate or pretty, but at the sizes we are talking about a few byte padding don't change anything
+        // Code snipped is also used to compute the necessary byte paddings to make sure we have convective bound
         let mut correct = UBig::ONE;
         let mut approx: f64 = 0.;
 
         for i in 2u32..4000 {
-            approx += f64::log2(i as f64);
+            approx += f64::log2(i.into());
             correct *= i;
             let tmp = correct.log2_bounds();
             assert!(
                 (approx / 8.).ceil() as usize >= (tmp.1 / 8.).ceil() as usize,
-                "left {}, right {}. count: {}",
+                "left {}, right {}. count: {i}",
                 approx.ceil(),
-                tmp.1.ceil(),
-                i
+                tmp.1.ceil()
             );
         }
     }
 
     #[test]
     fn test_roundtrip_empty() {
-        let input: Vec<u32> = vec![];
+        let sequence = [];
 
-        let encoded = Lehmer::encode(&input).unwrap();
-        let roundtrip = Lehmer::decode(&encoded, input.len() as u32).unwrap();
-        assert_eq!(input, roundtrip);
+        let encoded = Lehmer::encode(&sequence).unwrap();
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        assert_eq!(sequence, *roundtrip);
     }
 
     #[test]
     fn test_roundtrip_8() {
         let sequence = [7, 2, 0, 6, 5, 1, 4, 3];
         let encoded = Lehmer::encode(&sequence).unwrap();
-        let roundtrip = Lehmer::decode(&encoded, sequence.len() as u32).unwrap();
-
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -72,8 +76,8 @@ mod tests {
             28, 30, 7, 11, 25, 22, 26, 10,
         ];
         let encoded = Lehmer::encode(&sequence).unwrap();
-        let roundtrip = Lehmer::decode(&encoded, sequence.len() as u32).unwrap();
-
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -85,40 +89,42 @@ mod tests {
             30, 44, 9, 12, 38, 10, 41, 42, 57, 40, 15, 29, 16, 25, 54, 8, 59, 37, 31,
         ];
         let encoded = Lehmer::encode(&sequence).unwrap();
-        let roundtrip = Lehmer::decode(&encoded, sequence.len() as u32).unwrap();
-
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
     #[test]
     fn test_roundtrip_random() {
-        let mut input: Vec<u32> = (0..128).rev().collect();
+        let mut sequence: Vec<u32> = (0..128).rev().collect();
 
         let mut rng = rand::thread_rng();
 
         for _ in 0..10000 {
-            input.shuffle(&mut rng);
+            sequence.shuffle(&mut rng);
 
-            let encoded = Lehmer::encode(&input).unwrap();
+            let encoded = Lehmer::encode(&sequence).unwrap();
             assert!(!encoded.is_empty());
-            let roundtrip = Lehmer::decode(&encoded, input.len() as u32).unwrap();
-            assert_eq!(input, roundtrip);
+            let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+            Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+            assert_eq!(sequence, roundtrip);
         }
     }
 
     #[test]
     fn test_roundtrip_random_large() {
-        let mut input: Vec<u32> = (0..10000).rev().collect();
+        let mut sequence: Vec<u32> = (0..10_000).rev().collect();
 
         let mut rng = rand::thread_rng();
 
         for _ in 0..5 {
-            input.shuffle(&mut rng);
+            sequence.shuffle(&mut rng);
 
-            let encoded = Lehmer::encode(&input).unwrap();
+            let encoded = Lehmer::encode(&sequence).unwrap();
             assert!(!encoded.is_empty());
-            let roundtrip = Lehmer::decode(&encoded, input.len() as u32).unwrap();
-            assert_eq!(input, roundtrip);
+            let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+            Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+            assert_eq!(sequence, roundtrip);
         }
     }
 }

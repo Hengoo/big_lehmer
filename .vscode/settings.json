@@ -1,5 +1,11 @@
 {
     "cSpell.words": [
         "Lehmer"
-    ]
+    ],
+    "rust-analyzer.check.command": "clippy",
+    "rust-analyzer.check.extraArgs": [
+        "--",
+        "-Dwarnings",
+        "-Dclippy::pedantic"
+    ],
 }
