@@ -1,6 +1,8 @@
-// Naive approach would create a list [0..N]
-// and on insert(number) find the index of the number, then remove it
-// This constructs a binary tree which node weights are adjusted with on insertion
+use dashu::integer::UBig;
+
+/// Naive approach would create a list [0..N]
+/// and on insert(number) find the index of the number, then remove it
+/// This constructs a binary tree which node weights are adjusted with on insertion
 #[derive(Debug)]
 pub(crate) struct EncodeAS {
     tree: Vec<u32>,
@@ -59,89 +61,63 @@ impl EncodeAS {
     }
 }
 
-/// This cache combines several steps of the encode loop to "small" numbers to minimize the cost of big number math
+/// Cache combines several steps of the encode loop to use more "small" numbers to minimize the cost of big number math
 /// It stores a running add and running mul.
-/// u128 is faster than u64. Have not tried it with big int here, but could further improve performance
-#[derive(Debug)]
-pub(crate) struct EncodeCache {
-    pub(crate) add: u128,
-    pub(crate) mul: u128,
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct Cache {
+    pub(crate) add: u64,
+    pub(crate) mul: u64,
 }
 
-impl EncodeCache {
+impl Cache {
     pub(crate) fn default() -> Self {
-        EncodeCache { add: 0, mul: 1 }
+        Cache { add: 0, mul: 1 }
     }
 
     pub(crate) fn new(add: u64, mul: u64) -> Self {
         let new_add = add.checked_mul(mul).unwrap();
-        EncodeCache {
-            add: new_add.into(),
-            mul: mul.into(),
-        }
+        Cache { add: new_add, mul }
     }
 
     pub(crate) fn add(&mut self, add: u64, mul: u64) -> Option<()> {
-        let mut tmp = self.add.checked_add(add.into())?;
-        tmp = tmp.checked_mul(mul.into())?;
+        let mut tmp = self.add.checked_add(add)?;
+        tmp = tmp.checked_mul(mul)?;
 
-        self.mul = self.mul.checked_mul(mul.into())?;
+        self.mul = self.mul.checked_mul(mul)?;
         self.add = tmp;
         Some(())
     }
 }
 
-/// Naive approach would be to create a list from 0 to N and then repeatedly remove elements from it
-/// Very slightly faster than the naive approach
-/// Basically a tree that stores prim counts and is adjusted while fetching a number
+/// The big number variant of the above `Cache` that is used during map reduce
 #[derive(Debug)]
-pub(crate) struct DecodeAS {
-    // Store number of primitives of the left subtree
-    tree: Vec<u32>,
+pub(crate) struct BigCache {
+    pub(crate) add: UBig,
+    pub(crate) mul: UBig,
 }
-impl DecodeAS {
-    pub fn new(element_count: u32) -> Self {
-        let len = element_count.next_power_of_two();
-        let nodes = (0..len)
-            .map(|i| {
-                if i == 0 {
-                    return 1;
-                }
-                let height = i.trailing_zeros();
-                1u32 << height
-            })
-            .collect();
-        Self { tree: nodes }
+
+impl BigCache {
+    pub(crate) fn new(cache: &Cache) -> Self {
+        Self {
+            add: cache.add.into(),
+            mul: cache.mul.into(),
+        }
     }
 
-    pub fn remove(&mut self, number: u32) -> u32 {
-        let length = u32::try_from(self.tree.len()).expect("Sequence must fit in u32");
-        let mut left_count = 0;
-        let mut node_id = length / 2;
-        let mut jump = length / 4;
-
-        loop {
-            let node = &mut self.tree[node_id as usize];
-            if number >= (*node + left_count) {
-                // go right
-                left_count += *node;
-                node_id += jump;
-                if jump == 0 {
-                    break;
-                }
-            } else {
-                // go left
-                *node -= 1;
-                node_id -= jump;
-                if jump == 0 {
-                    node_id -= 1;
-                    break;
-                }
-            }
-
-            jump /= 2;
+    // -> reduce identity
+    pub(crate) fn identity() -> Self {
+        Self {
+            add: UBig::ZERO,
+            mul: UBig::ONE,
         }
-        node_id
+    }
+
+    // -> reduce combine
+    pub(crate) fn combine(left: Self, right: Self) -> Self {
+        Self {
+            add: (left.add * &right.mul) + right.add,
+            mul: left.mul * right.mul,
+        }
     }
 }
 

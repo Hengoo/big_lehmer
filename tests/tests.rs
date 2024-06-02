@@ -82,7 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_roundtrip_128() {
+    fn test_roundtrip_64() {
         let sequence = [
             61, 48, 3, 24, 60, 45, 35, 2, 33, 22, 55, 52, 18, 5, 36, 7, 1, 23, 28, 56, 50, 0, 4,
             63, 14, 11, 43, 53, 21, 34, 26, 32, 49, 20, 51, 62, 13, 19, 6, 46, 17, 39, 47, 58, 27,
@@ -95,12 +95,30 @@ mod tests {
     }
 
     #[test]
+    fn test_roundtrip_128() {
+        let sequence = [
+            16, 35, 20, 6, 30, 60, 48, 47, 22, 32, 91, 77, 64, 82, 34, 26, 108, 88, 27, 56, 58, 74,
+            98, 101, 115, 69, 112, 107, 84, 68, 43, 126, 7, 29, 105, 125, 21, 24, 118, 38, 13, 5,
+            28, 8, 51, 40, 99, 11, 45, 85, 120, 17, 14, 121, 94, 104, 97, 80, 67, 95, 4, 86, 2, 92,
+            79, 93, 122, 124, 75, 117, 123, 55, 15, 66, 127, 37, 0, 42, 110, 114, 62, 53, 25, 103,
+            81, 106, 3, 65, 87, 9, 96, 59, 63, 10, 33, 36, 54, 57, 49, 83, 90, 41, 23, 39, 73, 31,
+            61, 78, 109, 72, 19, 70, 18, 52, 119, 44, 12, 111, 89, 113, 1, 71, 50, 100, 102, 116,
+            46, 76,
+        ];
+
+        let encoded = Lehmer::encode(&sequence).unwrap();
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        assert_eq!(sequence, *roundtrip);
+    }
+
+    #[test]
     fn test_roundtrip_random() {
-        let mut sequence: Vec<u32> = (0..128).rev().collect();
+        let mut sequence: Vec<u32> = (0..512).collect();
 
         let mut rng = rand::thread_rng();
 
-        for _ in 0..10000 {
+        for _ in 0..1000 {
             sequence.shuffle(&mut rng);
 
             let encoded = Lehmer::encode(&sequence).unwrap();
@@ -113,11 +131,10 @@ mod tests {
 
     #[test]
     fn test_roundtrip_random_large() {
-        let mut sequence: Vec<u32> = (0..10_000).rev().collect();
-
+        let mut sequence: Vec<u32> = (0..300_000).collect();
         let mut rng = rand::thread_rng();
 
-        for _ in 0..5 {
+        for _ in 0..1 {
             sequence.shuffle(&mut rng);
 
             let encoded = Lehmer::encode(&sequence).unwrap();
