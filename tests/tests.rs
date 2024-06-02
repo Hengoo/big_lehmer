@@ -1,6 +1,5 @@
 extern crate big_lehmer;
-
-use big_lehmer::Lehmer;
+use big_lehmer::{decode, encode, get_encode_size};
 
 #[cfg(test)]
 mod tests {
@@ -13,15 +12,15 @@ mod tests {
     fn test_encode_size_samples() {
         // Values computed with wolfram alpha
         // the + values account for the padding we add to make sure it always enough
-        assert_eq!(Lehmer::get_encode_size(0), 0);
-        assert_eq!(Lehmer::get_encode_size(20), 8);
-        assert_eq!(Lehmer::get_encode_size(21), 9);
-        assert_eq!(Lehmer::get_encode_size(34), 16);
-        assert_eq!(Lehmer::get_encode_size(35), 17);
-        assert_eq!(Lehmer::get_encode_size(1024), 1097);
-        assert_eq!(Lehmer::get_encode_size(4000), 5263 + 2);
-        assert_eq!(Lehmer::get_encode_size(1_000_000), 2_311_111 + 32);
-        // assert_eq!(Lehmer::get_encode_size(u32::MAX), 16405328180 + 32);
+        assert_eq!(get_encode_size(0), 0);
+        assert_eq!(get_encode_size(20), 8);
+        assert_eq!(get_encode_size(21), 9);
+        assert_eq!(get_encode_size(34), 16);
+        assert_eq!(get_encode_size(35), 17);
+        assert_eq!(get_encode_size(1024), 1097);
+        assert_eq!(get_encode_size(4000), 5263 + 2);
+        assert_eq!(get_encode_size(1_000_000), 2_311_111 + 32);
+        // assert_eq!(get_encode_size(u32::MAX), 16405328180 + 32);
     }
 
     #[test]
@@ -54,18 +53,18 @@ mod tests {
     fn test_roundtrip_empty() {
         let sequence = [];
 
-        let encoded = Lehmer::encode(&sequence).unwrap();
+        let encoded = encode(&sequence).unwrap();
         let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
     #[test]
     fn test_roundtrip_8() {
         let sequence = [7, 2, 0, 6, 5, 1, 4, 3];
-        let encoded = Lehmer::encode(&sequence).unwrap();
+        let encoded = encode(&sequence).unwrap();
         let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -75,9 +74,9 @@ mod tests {
             3, 2, 15, 5, 23, 6, 16, 31, 19, 29, 21, 13, 17, 0, 27, 8, 24, 18, 12, 1, 9, 4, 14, 20,
             28, 30, 7, 11, 25, 22, 26, 10,
         ];
-        let encoded = Lehmer::encode(&sequence).unwrap();
+        let encoded = encode(&sequence).unwrap();
         let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -88,9 +87,9 @@ mod tests {
             63, 14, 11, 43, 53, 21, 34, 26, 32, 49, 20, 51, 62, 13, 19, 6, 46, 17, 39, 47, 58, 27,
             30, 44, 9, 12, 38, 10, 41, 42, 57, 40, 15, 29, 16, 25, 54, 8, 59, 37, 31,
         ];
-        let encoded = Lehmer::encode(&sequence).unwrap();
+        let encoded = encode(&sequence).unwrap();
         let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -106,9 +105,9 @@ mod tests {
             46, 76,
         ];
 
-        let encoded = Lehmer::encode(&sequence).unwrap();
+        let encoded = encode(&sequence).unwrap();
         let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-        Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+        decode(&encoded, &mut roundtrip).unwrap();
         assert_eq!(sequence, *roundtrip);
     }
 
@@ -121,10 +120,10 @@ mod tests {
         for _ in 0..1000 {
             sequence.shuffle(&mut rng);
 
-            let encoded = Lehmer::encode(&sequence).unwrap();
+            let encoded = encode(&sequence).unwrap();
             assert!(!encoded.is_empty());
             let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-            Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+            decode(&encoded, &mut roundtrip).unwrap();
             assert_eq!(sequence, roundtrip);
         }
     }
@@ -137,10 +136,10 @@ mod tests {
         for _ in 0..1 {
             sequence.shuffle(&mut rng);
 
-            let encoded = Lehmer::encode(&sequence).unwrap();
+            let encoded = encode(&sequence).unwrap();
             assert!(!encoded.is_empty());
             let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-            Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+            decode(&encoded, &mut roundtrip).unwrap();
             assert_eq!(sequence, roundtrip);
         }
     }

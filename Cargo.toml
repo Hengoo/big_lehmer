@@ -2,6 +2,12 @@
 name = "big_lehmer"
 version = "0.1.0"
 edition = "2021"
+authors = ["Andreas Leitner <leitner.andi@googlemail.com>"]
+description = "Framework to encode and decode large lehmer codes"
+repository = "https://github.com/Hengoo/big_lehmer"
+readme = "readme.md"
+categories = [ "compression", "mathematics" ]
+keywords = [ "lehmer", "math", "compression", "permutations" ]
 
 [dependencies]
 dashu = "0.4.2"

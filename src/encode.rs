@@ -9,7 +9,7 @@ pub(crate) struct EncodeAS {
 }
 
 impl EncodeAS {
-    pub fn new(element_count: u32) -> Self {
+    pub(crate) fn new(element_count: u32) -> Self {
         let len = element_count.next_power_of_two();
         EncodeAS {
             tree: vec![0; len.try_into().unwrap()],
@@ -38,7 +38,7 @@ impl EncodeAS {
         }
     }
 
-    pub fn insert(&mut self, number: u32) -> u32 {
+    pub(crate) fn insert(&mut self, number: u32) -> u32 {
         let mut result = number;
         let element_count = u32::try_from(self.tree.len()).unwrap();
         let mut node = element_count / 2;

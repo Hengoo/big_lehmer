@@ -1,7 +1,7 @@
 use std::fmt::{self};
 use std::fmt::{Display, Formatter};
 
-use crate::Lehmer;
+use crate::get_encode_size;
 
 #[derive(Debug)]
 pub enum Error {
@@ -37,7 +37,7 @@ impl Display for Error {
                 // Breaking up the string because long string causes bugs with the code auto formatting :(
                 "{byte_size} {element_count} byte, but storing its {} elements requires {} byte. {}",
                 "The byte output vector used in encode has",
-                Lehmer::get_encode_size(*element_count),
+                get_encode_size(*element_count),
                 "Make sure to correctly use \"Lehmer::get_encode_size()\""
             )),
         }

@@ -13,7 +13,7 @@ pub(crate) struct WorkItem<'a> {
 
 type DivideType = u64;
 
-// Final step that does the actual divisions on u64
+/// Final step that does the actual divisions on u64
 pub(crate) fn divide(work: WorkItem) {
     let mut dividend = DivideType::try_from(work.dividend).unwrap();
     for (index, r) in work.remainders.iter_mut().enumerate() {
@@ -28,8 +28,8 @@ pub(crate) fn divide(work: WorkItem) {
     }
 }
 
-// Splits the work items into two smaller if it makes sense
-// Second work item is None if the work item can be passed to the final division step
+/// Splits the work items into two smaller if it makes sense
+/// Second work item is None if the work item can be passed to the final division step
 pub(crate) fn split(work: WorkItem) -> (WorkItem, Option<WorkItem>) {
     let length = work.dividend.bit_len();
     if length <= usize::try_from(DivideType::BITS).unwrap() {
@@ -73,7 +73,8 @@ pub(crate) fn split(work: WorkItem) -> (WorkItem, Option<WorkItem>) {
     )
 }
 
-pub(crate) fn recursive_divide(work: WorkItem) {
+/// Recursively splits the work until the resulting work items can be divided
+pub(crate) fn recursive_split_divide(work: WorkItem) {
     let len = work.remainders.len();
     let (left, right) = split(work);
 
@@ -85,12 +86,12 @@ pub(crate) fn recursive_divide(work: WorkItem) {
     // Speedup for parallel is abysmal :(
     if len > 1000 {
         rayon::join(
-            || recursive_divide(left),
-            || recursive_divide(right.unwrap()),
+            || recursive_split_divide(left),
+            || recursive_split_divide(right.unwrap()),
         );
     } else {
-        recursive_divide(right.unwrap());
-        recursive_divide(left);
+        recursive_split_divide(right.unwrap());
+        recursive_split_divide(left);
     }
 }
 
@@ -103,7 +104,7 @@ pub(crate) struct DecodeAS {
     tree: Vec<u32>,
 }
 impl DecodeAS {
-    pub fn new(element_count: u32) -> Self {
+    pub(crate) fn new(element_count: u32) -> Self {
         let len = element_count.next_power_of_two();
         let nodes = (0..len)
             .map(|i| {
@@ -117,7 +118,7 @@ impl DecodeAS {
         Self { tree: nodes }
     }
 
-    pub fn remove(&mut self, number: u32) -> u32 {
+    pub(crate) fn remove(&mut self, number: u32) -> u32 {
         let length = u32::try_from(self.tree.len()).expect("Sequence must fit in u32");
         let mut left_count = 0;
         let mut node_id = length / 2;
