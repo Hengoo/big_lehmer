@@ -3,7 +3,7 @@ name = "big_lehmer"
 version = "0.1.0"
 edition = "2021"
 authors = ["Andreas Leitner <leitner.andi@googlemail.com>"]
-description = "Framework to encode and decode large lehmer codes"
+description = "big_lehmer is a framework to encode (compress) and decode large number sequences into lehmer codes"
 repository = "https://github.com/Hengoo/big_lehmer"
 readme = "readme.md"
 categories = [ "compression", "mathematics" ]
@@ -12,6 +12,7 @@ exclude = [
     ".vscode/*",
     ".github/*",
 ]
+license = "MIT OR Apache-2.0"
 
 [dependencies]
 dashu = "0.4.2"

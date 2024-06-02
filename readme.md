@@ -1,4 +1,6 @@
-Big Lehmer is a lib for converting between arbitrarily sized permutation vectors into compact [Lehmer codes](https://en.wikipedia.org/wiki/Lehmer_code) and their uncompressed vector representation.
+# Big Lehmer
+
+Big Lehmer is a lib for converting between arbitrarily sized sequence permutations into compact [Lehmer codes](https://en.wikipedia.org/wiki/Lehmer_code) and back to their uncompressed representation.
 
 The number sequence must have similar properties as `[0.N].shuffle`. Basically sequential numbers in random order, starting at zero. The lib technically supports up to `u32::MAX` numbers, but performance will be the main issue beforehand.
 
