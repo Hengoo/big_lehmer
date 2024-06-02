@@ -19,6 +19,6 @@ fn main() {
 
 ### Benchmarks:
 
-TODO
+TODO Some numbers about performance and size of the encoding.
 
 Performance for large sequences is dominated by the decode big number math. A possible optimization is to replace Dashu with rug. Apparently rug (=GMP) is extremely well optimized, but it's not native rust and not trivial to get working.

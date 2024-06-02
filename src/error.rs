@@ -29,7 +29,7 @@ impl Display for Error {
             Self::SequenceToLong { element_count } => f.write_fmt(format_args!(
                 "Input sequence contains {element_count} elements, but we only support up to 2^32"
             )),
-            Self::Decode => f.write_str("Something failed during decode"),
+            Self::Decode => f.write_str("Something failed during decode. Usually happens from invalid input."),
             Self::OutVectorSize {
                 byte_size,
                 element_count,

@@ -1,11 +1,11 @@
-use dashu::{base::BitTest, integer::UBig};
+use dashu::integer::UBig;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 mod decode;
 mod encode;
 mod error;
 
-use decode::{divide, parallel_divide, recursive_divide, split, DecodeAS, WorkItem};
+use decode::{recursive_divide, DecodeAS, WorkItem};
 use encode::{BigCache, Cache, EncodeAS};
 use error::Error;
 
@@ -85,7 +85,7 @@ impl Lehmer {
     ///
     /// # Panics
     ///
-    /// Generally it should not panic. There might be possible panics on 16 bit systems.
+    /// Generally it should not panic. There might be panics on 16 bit systems.
     pub fn encode(numbers: &[u32]) -> Result<Box<[u8]>, Error> {
         if numbers.is_empty() {
             return Ok(Box::new([]));
@@ -138,13 +138,21 @@ impl Lehmer {
     ///
     /// Can error when the code was created with more elements than you are trying to decode.  
     /// Can error when `encoded` is not a valid lehmer code  
-    /// Will error when `out` has more than `u32::MAX` elements.  
+    /// Will error when `results` has more than `u32::MAX` elements.  
     ///
-    /// // TODO test it with garbage codes (random bytes) -> maybe can validate more
+    /// # Examples
+    /// ```
+    /// use big_lehmer::Lehmer;
+    /// let sequence = [7, 2, 0, 6, 5, 1, 4, 3];
+    /// let encoded = Lehmer::encode(&sequence).unwrap();
+    /// let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+    /// Lehmer::decode(&encoded, &mut roundtrip).unwrap();
+    /// assert_eq!(sequence, *roundtrip);
+    /// ```
     ///
     /// # Panics
     ///
-    /// Generally it should not panic. There might be possible panics on 16 bit systems.
+    /// Generally it should not panic. There might be panics on 16 bit systems.
     pub fn decode(encoded: &[u8], results: &mut [u32]) -> Result<(), Error> {
         if results.is_empty() {
             return Ok(());
@@ -154,46 +162,23 @@ impl Lehmer {
             element_count: results.len(),
         })?;
 
-        let mut remainders = vec![0; results.len()];
+        let mut remainders = vec![None; results.len()];
 
         let input: UBig = UBig::from_le_bytes(encoded);
-        let mut work = WorkItem {
+        let work = WorkItem {
             dividend: input,
             start_index: 2,
             remainders: &mut remainders,
         };
-        match 1 {
-            0 => parallel_divide(work),
-            1 => recursive_divide(work),
-            2 => rayon::scope(|s| loop {
-                let (l, r) = split(work);
-                if r.is_some() {
-                    work = r.unwrap();
-                    s.spawn(|_| recursive_divide(l));
-                } else {
-                    recursive_divide(l);
-                    return;
-                }
-            }),
-            3 => {
-                // TODO: Is there a way to "collect" (in our case we already use count) without any overhead?
-                let _ = rayon::iter::split(work, split)
-                    .map(|work| {
-                        // :( Rayon split does not split until everything is done...
-                        if work.dividend.bit_len() <= 64 {
-                            divide(work);
-                        } else {
-                            recursive_divide(work);
-                        }
-                    })
-                    .count();
-            }
-            _ => unreachable!(),
-        }
+        recursive_divide(work);
 
         let mut decode_as = DecodeAS::new(element_count);
         for (index, &t) in remainders[0..results.len() - 1].iter().rev().enumerate() {
-            results[index] = decode_as.remove(t);
+            if let Some(t) = t {
+                results[index] = decode_as.remove(t.get() - 1);
+            } else {
+                return Err(Error::Decode);
+            }
         }
         *results.last_mut().unwrap() = decode_as.remove(0);
 

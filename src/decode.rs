@@ -1,11 +1,14 @@
+use std::num::NonZeroU32;
+
 use dashu::{base::BitTest, base::DivRem, integer::UBig};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 #[derive(Debug)]
 pub(crate) struct WorkItem<'a> {
     pub(crate) dividend: UBig,
     pub(crate) start_index: u32,
-    pub(crate) remainders: &'a mut [u32],
+    // None means an error has occurred
+    // Every remainder is +1 to fit in NonZero
+    pub(crate) remainders: &'a mut [Option<NonZeroU32>],
 }
 
 type DivideType = u64;
@@ -15,12 +18,14 @@ pub(crate) fn divide(work: WorkItem) {
     let mut dividend = DivideType::try_from(work.dividend).unwrap();
     for (index, r) in work.remainders.iter_mut().enumerate() {
         let divisor = DivideType::from(work.start_index) + DivideType::try_from(index).unwrap();
-        *r = u32::try_from(dividend % divisor).unwrap();
+        *r = NonZeroU32::new(u32::try_from(dividend % divisor).unwrap() + 1);
 
         dividend /= divisor;
     }
-    // TODO use result here (How to handle result with parallelism?)
-    assert_eq!(dividend, 0);
+
+    if dividend != 0 {
+        *work.remainders.last_mut().unwrap() = None;
+    }
 }
 
 // Splits the work items into two smaller if it makes sense
@@ -87,23 +92,6 @@ pub(crate) fn recursive_divide(work: WorkItem) {
         recursive_divide(right.unwrap());
         recursive_divide(left);
     }
-}
-
-pub(crate) fn parallel_divide(work: WorkItem) {
-    let mut work = work;
-    let mut work_items = vec![];
-    loop {
-        let (left, right) = split(work);
-        if right.is_some() {
-            work = left;
-            work_items.push(right.unwrap());
-        } else {
-            work_items.push(left);
-            break;
-        }
-    }
-
-    work_items.into_par_iter().for_each(recursive_divide);
 }
 
 /// Naive approach would be to create a list from 0 to N and then repeatedly remove elements from it

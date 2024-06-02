@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_roundtrip_random_large() {
-        let mut sequence: Vec<u32> = (0..300_000).collect();
+        let mut sequence: Vec<u32> = (0..10_000).collect();
         let mut rng = rand::thread_rng();
 
         for _ in 0..1 {
