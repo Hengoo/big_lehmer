@@ -6,13 +6,13 @@ The number sequence must have similar properties as `[0.N].shuffle`. Basically s
 ```rust
 extern crate big_lehmer;
 
-use big_lehmer::Lehmer;
+use big_lehmer;
 
 fn main() {
     let sequence = [7, 2, 0, 6, 5, 1, 4, 3];
-    let lehmer_code = Lehmer::encode(&sequence).unwrap();
+    let lehmer_code = big_lehmer::encode(&sequence).unwrap();
     let mut roundtrip = [0; 8];
-    Lehmer::decode(&lehmer_code, &mut roundtrip).unwrap();
+    big_lehmer::decode(&lehmer_code, &mut roundtrip).unwrap();
     assert_eq!(sequence, roundtrip);
 }
 ```
