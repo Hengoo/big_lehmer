@@ -7,6 +7,7 @@ mod tests {
     use dashu::integer::UBig;
     use dashu::rational::ops::EstimatedLog2;
     use rand::prelude::*;
+    use std::time::Instant;
 
     #[test]
     fn test_encode_size_samples() {
@@ -130,17 +131,24 @@ mod tests {
 
     #[test]
     fn test_roundtrip_random_large() {
-        let mut sequence: Vec<u32> = (0..10_000).collect();
+        let mut sequence: Vec<u32> = (0..100_000).collect();
         let mut rng = rand::thread_rng();
+        sequence.shuffle(&mut rng);
 
-        for _ in 0..1 {
-            sequence.shuffle(&mut rng);
+        let ts = Instant::now();
 
-            let encoded = encode(&sequence).unwrap();
-            assert!(!encoded.is_empty());
-            let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
-            decode(&encoded, &mut roundtrip).unwrap();
-            assert_eq!(sequence, roundtrip);
-        }
+        let encoded = encode(&sequence).unwrap();
+        assert!(!encoded.is_empty());
+        let encode_time = ts.elapsed();
+        let ts: Instant = Instant::now();
+        let mut roundtrip: Vec<u32> = vec![0; sequence.len()];
+        decode(&encoded, &mut roundtrip).unwrap();
+        assert_eq!(sequence, roundtrip);
+        let decode_time = ts.elapsed();
+
+        println!(
+            "encode: {encode_time:.2?}, decode: {decode_time:.2?}, byte size: {}",
+            encoded.len()
+        );
     }
 }

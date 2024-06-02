@@ -19,6 +19,15 @@ fn main() {
 
 ### Benchmarks:
 
-TODO Some numbers about performance and size of the encoding.
+Measured on my "old system" (i7- 6700k). Not very accurate, just to showcase performance expectations.
 
-Performance for large sequences is dominated by the decode big number math. A possible optimization is to replace Dashu with rug. Apparently rug (=GMP) is extremely well optimized, but it's not native rust and not trivial to get working.
+| Sequence length | Lehmer code size         | encode time | decode time |
+| --------------- | ------------------------ | ----------- | ----------- |
+| 512             | 4485 bytes               | 470.70µs    | 107.40µs    |
+| 10_000          | 14808 bytes   = 15 KB    | 2.40ms      | 4.11ms      |
+| 100_000         | 189588 bytes  = ~190 KB  | 61.21ms     | 205.44ms    |
+| 1_000_000       | 2311111 bytes = ~2.2 MiB | 2.15s       | 11.39s      |
+
+The crate is mainly optimized for large sequences.
+
+Performance for large sequences is dominated by the big integer math. A possible optimization is to replace Dashu with rug. Apparently rug (=GMP) is extremely well optimized, but it's not native rust and not trivial to get working.
