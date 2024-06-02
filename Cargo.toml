@@ -8,6 +8,10 @@ repository = "https://github.com/Hengoo/big_lehmer"
 readme = "readme.md"
 categories = [ "compression", "mathematics" ]
 keywords = [ "lehmer", "math", "compression", "permutations" ]
+exclude = [
+    ".vscode/*",
+    ".github/*",
+]
 
 [dependencies]
 dashu = "0.4.2"
