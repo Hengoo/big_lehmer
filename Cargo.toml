@@ -1,6 +1,6 @@
 [package]
 name = "big_lehmer"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["Andreas Leitner <leitner.andi@googlemail.com>"]
 description = "big_lehmer is a framework to encode (compress) and decode large number sequences into lehmer codes"

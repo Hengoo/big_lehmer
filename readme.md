@@ -6,10 +6,6 @@ The number sequence must have similar properties as `[0.N].shuffle`. Basically s
 
 ### Usage
 ```rust
-extern crate big_lehmer;
-
-use big_lehmer;
-
 fn main() {
     let sequence = [7, 2, 0, 6, 5, 1, 4, 3];
     let lehmer_code = big_lehmer::encode(&sequence).unwrap();

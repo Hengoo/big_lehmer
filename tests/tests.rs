@@ -1,4 +1,3 @@
-extern crate big_lehmer;
 use big_lehmer::{decode, encode, get_encode_size};
 
 #[cfg(test)]
