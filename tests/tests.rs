@@ -115,7 +115,7 @@ mod tests {
     fn test_roundtrip_random() {
         let mut sequence: Vec<u32> = (0..512).collect();
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1000 {
             sequence.shuffle(&mut rng);
@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn test_roundtrip_random_large() {
         let mut sequence: Vec<u32> = (0..100_000).collect();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         sequence.shuffle(&mut rng);
 
         let ts = Instant::now();

@@ -15,8 +15,8 @@ exclude = [
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-dashu = "0.4.2"
-rayon = "1.10.0"
+dashu = "0.4"
+rayon = "1.12"
 
 [dev-dependencies]
-rand = { version = "0.8.5", features = ["small_rng"] }
+rand = "0.10"
